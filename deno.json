@@ -1,0 +1,27 @@
+{
+    "fmt": {
+        "options": {
+            "lineWidth": 120
+        },
+        "files": {
+            "exclude": [
+                "./node_modules/",
+                "./out/",
+                "./package-lock.json"
+            ]
+        }
+    },
+    "lint": {
+        "files": {
+            "exclude": [
+                "./node_modules/",
+                "./out/",
+                "./package-lock.json"
+            ]
+        }
+    },
+    "tasks": {
+        "bot": "deno run -A --watch bot.deno.ts",
+        "backport": "deno run --no-prompt --allow-read=. --allow-write=. https://deno.land/x/deno2node/src/cli.ts   "
+    }
+}
