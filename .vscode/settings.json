@@ -1,15 +1,15 @@
 {
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.fixAll": true,
-        "source.organizeImports": true
-    },
-    "deno.enable": true,
-    "deno.lint": true,
-    "deno.config": "./deno.json",
-    "editor.defaultFormatter": "denoland.vscode-deno",
-    "editor.formatOnSaveMode": "file",
-    "[typescript]": {
-        "editor.defaultFormatter": "denoland.vscode-deno"
-    }
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": true
+  },
+  "deno.enable": true,
+  "deno.lint": true,
+  "deno.config": "./deno.json",
+  "editor.defaultFormatter": "denoland.vscode-deno",
+  "editor.formatOnSaveMode": "file",
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  }
 }

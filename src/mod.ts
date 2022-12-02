@@ -1,5 +1,10 @@
-import type { ChatMember, ChatMemberUpdated, Context, StorageAdapter } from "./deps.deno.ts";
-import { Composer } from "./deps.deno.ts";
+import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts";
+
+export type ChatMembersContext = Context & {
+  chatMembers: {
+    getChatMember: (userId: number, chatId?: string | number) => Promise<ChatMember>;
+  };
+};
 
 export type ChatMembersOptions = {
   /**
@@ -7,6 +12,7 @@ export type ChatMembersOptions = {
    * bot receives a LeftChatMember update
    */
   keepLeftChatMembers: boolean;
+  enableAggressiveStorage: boolean;
   /**
    * Function used to determine the key fo a given user and chat
    * The default implementation uses a combination of
@@ -24,17 +30,17 @@ export type ChatMembersOptions = {
    * a user will be deleted from storage when they leave any chat, even if they're still a member of
    * another chat where the bot is present.
    */
-  getKey: (update: ChatMemberUpdated) => string;
+  getKey: (chatId: string | number, userId: number) => string;
 };
 
-function defaultKeyStrategy(update: ChatMemberUpdated) {
-  return `${update.chat.id}_${update.new_chat_member.user.id}`;
+function defaultKeyStrategy(chatId: string | number, userId: number) {
+  return `${chatId}_${userId}`;
 }
 
 /**
  * Creates a middleware that keeps track of chat member updates
  *
- * **NOTE**: Youu need to manually enable `chat_members` update type for this to work
+ * **NOTE**: You need to manually enable `chat_members` update type for this to work
  *
  * Example usage:
  *
@@ -47,19 +53,40 @@ function defaultKeyStrategy(update: ChatMemberUpdated) {
  * bot.start({ allowed_updates: ["chat_member"] });
  * ```
  * @param adapter Storage adapter responsible for saving members information
- * @param options Cconfiguration options for the middleware
+ * @param options Configuration options for the middleware
  * @returns A middleware that keeps track of chat member updates
  */
 export function chatMembers(
   adapter: StorageAdapter<ChatMember>,
   options: Partial<ChatMembersOptions> = {},
-): Composer<Context> {
-  const { keepLeftChatMembers = false, getKey = defaultKeyStrategy } = options;
+): Composer<ChatMembersContext> {
+  const { keepLeftChatMembers = false, enableAggressiveStorage = false, getKey = defaultKeyStrategy } = options;
 
-  const composer = new Composer();
+  const composer = new Composer<ChatMembersContext>();
+
+  composer.use((ctx, next) => {
+    ctx.chatMembers = {
+      getChatMember: async (userId, chatId = ctx.chat?.id ?? undefined) => {
+        if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
+
+        const key = getKey(chatId, userId);
+        const cachedChatMember = await adapter.read(key);
+
+        if (cachedChatMember) return cachedChatMember;
+
+        const chatMember = await ctx.api.getChatMember(chatId, userId);
+
+        await adapter.write(key, chatMember);
+
+        return chatMember;
+      },
+    };
+
+    return next();
+  });
 
   composer.on("chat_member", async (ctx, next) => {
-    const key = getKey(ctx.chatMember);
+    const key = getKey(ctx.chatMember.chat.id, ctx.chatMember.new_chat_member.user.id);
     const status = ctx.chatMember.new_chat_member.status;
 
     const DELETE_STATUS = ["left", "kicked"];
@@ -73,6 +100,15 @@ export function chatMembers(
     await adapter.write(key, ctx.chatMember.new_chat_member);
     return next();
   });
+
+  composer
+    .filter(() => enableAggressiveStorage)
+    .filter((ctx): ctx is ChatMembersContext & { chat: Chat; from: User } => Boolean(ctx.chat) && Boolean(ctx.from))
+    .use(async (ctx, next) => {
+      await ctx.chatMembers.getChatMember(ctx.from.id);
+
+      return next();
+    });
 
   return composer;
 }
