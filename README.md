@@ -12,9 +12,9 @@ instance of any class that implements the [`StorageAdapter`](https://deno.land/x
 interface.
 
 ```typescript
-import { Bot, Context, MemorySessionStorage } from "https://deno.land/x/grammy/mod.ts";
-import type { ChatMember } from "https://deno.land/x/grammy/types.ts";
-import { chatMembers, ChatMembersFlavor } from "https://deno.land/x/grammy_chat_members/mod.ts";
+import { Bot, Context, MemorySessionStorage } from "grammy";
+import type { ChatMember } from "@grammyjs/types";
+import { chatMembers, ChatMembersFlavor } from "@grammyjs/chat-members";
 
 type MyContext = Context & ChatMembersFlavor;
 
