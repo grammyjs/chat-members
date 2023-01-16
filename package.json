@@ -2,12 +2,12 @@
   "name": "@grammyjs/chat-members",
   "version": "1.0.2",
   "description": "Chat member plugin for grammY",
-  "homepage": "https://grammy.dev/plugins/chat-members.html",
+  "homepage": "https://github.com/grammyjs/chat-members",
   "main": "./out/mod.js",
   "type": "commonjs",
   "repository": {
     "type": "git",
-    "url": "git+https://https://github.com/grammyjs/chat-members.git"
+    "url": "https://https://github.com/grammyjs/chat-members.git"
   },
   "exports": {
     ".": "./out/index.js"
@@ -18,7 +18,7 @@
   "author": "Roz <roz@rjmunhoz.me>",
   "license": "MIT",
   "bugs": {
-    "url": "https://https://github.com/grammyjs/chat-members/issues"
+    "url": "https://github.com/grammyjs/chat-members/issues"
   },
   "peerDependencies": {
     "@grammyjs/types": "^2.11.2",
