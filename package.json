@@ -7,7 +7,7 @@
   "type": "commonjs",
   "repository": {
     "type": "git",
-    "url": "https://https://github.com/grammyjs/chat-members.git"
+    "url": "https://github.com/grammyjs/chat-members.git"
   },
   "exports": {
     ".": "./out/index.js"
