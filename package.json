@@ -1,13 +1,13 @@
 {
   "name": "@grammyjs/chat-members",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "Chat member plugin for grammY",
   "homepage": "https://grammy.dev/plugins/chat-members.html",
   "main": "./out/mod.js",
   "type": "commonjs",
   "repository": {
     "type": "git",
-    "url": "git+https://https://github.com/roziscoding/grammy-chat-members.git"
+    "url": "git+https://https://github.com/grammyjs/chat-members.git"
   },
   "exports": {
     ".": "./out/index.js"
@@ -15,14 +15,14 @@
   "files": [
     "out/"
   ],
-  "author": "Amir Zouerami",
+  "author": "Roz <roz@rjmunhoz.me>",
   "license": "MIT",
   "bugs": {
-    "url": "https://https://github.com/roziscoding/grammy-chat-members/issues"
+    "url": "https://https://github.com/grammyjs/chat-members/issues"
   },
   "peerDependencies": {
-    "grammy": "^1.12.0",
-    "@grammyjs/types": "^2.10.2"
+    "@grammyjs/types": "^2.11.2",
+    "grammy": "^1.13.0"
   },
   "devDependencies": {
     "@types/node": "^18.11.9",

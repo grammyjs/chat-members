@@ -1,10 +1,25 @@
-import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts";
+import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts"
 
-export type ChatMembersContext = Context & {
+export type ChatMembersFlavor = {
+  /**
+   * Namespace of the `chat-members` plugin
+   */
   chatMembers: {
-    getChatMember: (userId: number, chatId?: string | number) => Promise<ChatMember>;
+    /**
+     * Tries to obtain information about a member of a chat. If that information is already known,
+     * no API calls are made.
+     *
+     * If the information is not yet known, calls `ctx.api.getChatMember`, saves the result to storage and returns it.
+     *
+     * @param chatId Chat in which to look for the  user
+     * @param userId Id of the user to get information about
+     * @returns Information about the status of the user on the given chat
+     */
+    getChatMember: (chatId?: string | number, userId?: number) => Promise<ChatMember>;
   };
 };
+
+type ChatMembersContext = Context & ChatMembersFlavor;
 
 export type ChatMembersOptions = {
   /**
@@ -12,6 +27,16 @@ export type ChatMembersOptions = {
    * bot receives a LeftChatMember update
    */
   keepLeftChatMembers: boolean;
+  /**
+   * This option will install middleware to cache chat members without depending on the
+   * `chat_member` event. For every update, the middleware checks if `ctx.chat` and `ctx.from` exist. If they both do, it
+   * then proceeds to call `ctx.chatMembers.getChatMember` to add the chat member information to the storage in case it
+   * doesn't exist.
+   *
+   * Please note that this means the storage will be called for **every update**, which may be a lot, depending on how many
+   * updates your bot receives. This also has the potential to impact the performance of your bot drastically. Only use this
+   * if you _really_ know what you're doing and are ok with the risks and consequences.
+   */
   enableAggressiveStorage: boolean;
   /**
    * Function used to determine the key fo a given user and chat
@@ -66,7 +91,8 @@ export function chatMembers(
 
   composer.use((ctx, next) => {
     ctx.chatMembers = {
-      getChatMember: async (userId, chatId = ctx.chat?.id ?? undefined) => {
+      getChatMember: async (chatId = ctx.chat?.id ?? undefined, userId = ctx.from?.id ?? undefined) => {
+        if (!userId) throw new Error("ctx.from is undefined and no userId was provided");
         if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
 
         const key = getKey(chatId, userId);
@@ -112,3 +138,5 @@ export function chatMembers(
 
   return composer;
 }
+
+export default { chatMembers }

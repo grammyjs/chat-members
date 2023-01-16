@@ -1,4 +1,5 @@
 {
+  "lock": false,
   "fmt": {
     "options": {
       "lineWidth": 120
@@ -16,12 +17,13 @@
       "exclude": [
         "./node_modules/",
         "./out/",
-        "./package-lock.json"
+        "./package-lock.json",
+        "./src/deps.node.ts"
       ]
     }
   },
   "tasks": {
     "bot": "deno run -A --watch bot.deno.ts",
-    "backport": "deno run --no-prompt --allow-read=. --allow-write=. https://deno.land/x/deno2node@v1.5.1/src/cli.ts   "
+    "backport": "rm -rf out && npm ci && deno run --no-prompt --allow-read=. --allow-write=. https://deno.land/x/deno2node@v1.5.1/src/cli.ts   "
   }
 }
