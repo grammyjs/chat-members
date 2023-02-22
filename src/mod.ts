@@ -92,8 +92,11 @@ export function chatMembers(
   composer.use((ctx, next) => {
     ctx.chatMembers = {
       getChatMember: async (chatId = ctx.chat?.id ?? undefined, userId = ctx.from?.id ?? undefined) => {
-        if (!userId) throw new Error("ctx.from is undefined and no userId was provided");
-        if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
+        if(!chatId || !userId) {
+            const errorMessage = `${!chatId ? "ctx.chat" : "ctx.from"} is undefined and no ${!chatId ? "chatId" : "fromId"} was provided`;
+
+            throw new Error(errorMessage);
+        }
 
         const key = getKey(chatId, userId);
         const cachedChatMember = await adapter.read(key);
