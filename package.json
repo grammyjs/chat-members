@@ -5,6 +5,9 @@
   "homepage": "https://github.com/grammyjs/chat-members",
   "main": "./out/mod.js",
   "type": "commonjs",
+  "scripts": {
+    "prepack": "deno task backport"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/grammyjs/chat-members.git"
