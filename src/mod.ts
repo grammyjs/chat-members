@@ -179,7 +179,7 @@ type ChatsOptions = {
    */
   enableAggressiveStorage: boolean;
   /**
-   * Controls wether the middleware should should also store private chats
+   * Controls wether the middleware should also store private chats
    */
   storePrivateChats: boolean;
 };
