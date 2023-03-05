@@ -1,4 +1,4 @@
-import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts"
+import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts";
 
 export type ChatMembersFlavor = {
   /**
@@ -62,6 +62,10 @@ function defaultKeyStrategy(chatId: string | number, userId: number) {
   return `${chatId}_${userId}`;
 }
 
+function isDeletedStatus(status: string): status is "left" | "kicked" {
+  return ["left", "kicked"].includes(status);
+}
+
 /**
  * Creates a middleware that keeps track of chat member updates
  *
@@ -115,9 +119,7 @@ export function chatMembers(
     const key = getKey(ctx.chatMember.chat.id, ctx.chatMember.new_chat_member.user.id);
     const status = ctx.chatMember.new_chat_member.status;
 
-    const DELETE_STATUS = ["left", "kicked"];
-
-    if (DELETE_STATUS.includes(status) && !keepLeftChatMembers) {
+    if (isDeletedStatus(status) && !keepLeftChatMembers) {
       if (await adapter.read(key)) await adapter.delete(key);
 
       return next();
@@ -139,4 +141,110 @@ export function chatMembers(
   return composer;
 }
 
-export default { chatMembers }
+type ChatsFlavor = {
+  /**
+   * Namespace of the `chat-members` plugin
+   */
+  chatMembers: {
+    /**
+     * Tries to obtain information about a chat. If that information is already known,
+     * no API calls are made.
+     *
+     * If the information is not yet known, calls `ctx.api.getChat`, saves the result to storage and returns it.
+     *
+     * @param chatId Id of the desired chat
+     * @returns Information about the status of the user on the given chat
+     */
+    getChat: (chatId?: number) => Promise<Chat>;
+  };
+};
+
+type ChatsContext = Context & ChatsFlavor;
+
+type ChatsOptions = {
+  /**
+   * Prevents deletion of chats when
+   * bot is blocked or kiecked.
+   */
+  keepLeftChats: boolean;
+  /**
+   * This option will install middleware to cache chats without depending on the
+   * `my_chat_member` event. For every update, the middleware checks if `ctx.chat` exists. If it does, it
+   * then proceeds to call `ctx.chatMembers.getChat` to add the chat information to the storage in case it
+   * doesn't exist.
+   *
+   * Please note that this means the storage will be called for **every update**, which may be a lot, depending on how many
+   * updates your bot receives. This also has the potential to impact the performance of your bot drastically. Only use this
+   * if you _really_ know what you're doing and are ok with the risks and consequences.
+   */
+  enableAggressiveStorage: boolean;
+  /**
+   * Controls wether the middleware should should also store private chats
+   */
+  storePrivateChats: boolean;
+};
+
+/**
+ * Creates a middleware that keeps track of `my_chat_member` updates
+ *
+ * Example usage:
+ *
+ * ```typescript
+ * const bot = new Bot("<YOR_TELEGRAM_TOKEN>");
+ * const adapter = new MemorySessionStorage();
+ *
+ * bot.use(chats(adapter));
+ * ```
+ * @param adapter Storage adapter responsible for saving members information
+ * @param options Configuration options for the middleware
+ * @returns A middleware that keeps track of my_chat_member updates
+ */
+export function chats(adapter: StorageAdapter<Chat>, options: ChatsOptions) {
+  const { storePrivateChats = false, keepLeftChats = false, enableAggressiveStorage = false } = options;
+
+  const composer = new Composer<ChatsContext>();
+
+  composer.use((ctx, next) => {
+    ctx.chatMembers.getChat = async (chatId: number | undefined = ctx.chat?.id) => {
+      if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
+
+      const cachedChat = await adapter.read(`${chatId}`);
+
+      if (cachedChat) return cachedChat;
+
+      const chat = await ctx.api.getChat(chatId);
+
+      await adapter.write(`${chatId}`, chat);
+
+      return chat;
+    };
+
+    return next();
+  });
+
+  composer
+    .filter((ctx) => !ctx.hasChatType("private") || storePrivateChats)
+    .on("my_chat_member", async (ctx, next) => {
+      const { new_chat_member: newChatMember } = ctx.myChatMember;
+
+      if (isDeletedStatus(newChatMember.status) && !keepLeftChats) {
+        if (await adapter.read(`${ctx.chat.id}`)) await adapter.delete(`${ctx.chat.id}`);
+
+        return next();
+      }
+
+      await adapter.write(`${ctx.chat.id}`, ctx.chat);
+      return next();
+    });
+
+  composer.filter(() => enableAggressiveStorage)
+    .filter((ctx): ctx is ChatsContext & { chat: Chat } => Boolean(ctx.chat))
+    .use(async (ctx, next) => {
+      await adapter.write(`${ctx.chat.id}`, ctx.chat);
+      return next();
+    });
+
+  return composer;
+}
+
+export default { chatMembers, chats };
