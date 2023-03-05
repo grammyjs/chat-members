@@ -164,7 +164,7 @@ type ChatsContext = Context & ChatsFlavor;
 type ChatsOptions = {
   /**
    * Prevents deletion of chats when
-   * bot is blocked or kiecked.
+   * bot is blocked or kicked.
    */
   keepLeftChats: boolean;
   /**
