@@ -179,7 +179,7 @@ type ChatsOptions = {
    */
   enableAggressiveStorage: boolean;
   /**
-   * Controls wether the middleware should also store private chats
+   * Controls whether the middleware should also store private chats
    */
   storePrivateChats: boolean;
 };
@@ -190,7 +190,7 @@ type ChatsOptions = {
  * Example usage:
  *
  * ```typescript
- * const bot = new Bot("<YOR_TELEGRAM_TOKEN>");
+ * const bot = new Bot("<YOUR_TELEGRAM_TOKEN>");
  * const adapter = new MemorySessionStorage();
  *
  * bot.use(chats(adapter));
