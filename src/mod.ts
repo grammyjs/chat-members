@@ -133,7 +133,7 @@ export function chatMembers(
     .filter(() => enableAggressiveStorage)
     .filter((ctx): ctx is ChatMembersContext & { chat: Chat; from: User } => Boolean(ctx.chat) && Boolean(ctx.from))
     .use(async (ctx, next) => {
-      await ctx.chatMembers.getChatMember(ctx.from.id);
+      await ctx.chatMembers.getChatMember();
 
       return next();
     });

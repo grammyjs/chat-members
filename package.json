@@ -1,12 +1,12 @@
 {
   "name": "@grammyjs/chat-members",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "description": "Chat member plugin for grammY",
   "homepage": "https://github.com/grammyjs/chat-members",
   "main": "./out/mod.js",
   "type": "commonjs",
   "scripts": {
-    "prepack": "deno task backport"
+    "prepublishOnly": "deno task backport"
   },
   "repository": {
     "type": "git",
@@ -28,8 +28,7 @@
     "grammy": "^1.13.0"
   },
   "devDependencies": {
-    "@types/node": "^18.11.9",
-    "deno2node": "~1.0.0"
+    "@types/node": "^18.11.9"
   },
   "keywords": [
     "grammY",

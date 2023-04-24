@@ -24,6 +24,6 @@
   },
   "tasks": {
     "bot": "deno run -A --watch bot.deno.ts",
-    "backport": "rm -rf out && npm install --no-package-lock && deno run --no-prompt --allow-read=. --allow-write=. https://deno.land/x/deno2node@v1.5.1/src/cli.ts"
+    "backport": "rm -rf out && npm install --no-package-lock && deno run --no-prompt --allow-read=. --allow-write=. https://lib.deno.dev/x/deno2node@v1/src/cli.ts"
   }
 }
