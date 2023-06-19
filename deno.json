@@ -1,26 +1,20 @@
 {
   "lock": false,
   "fmt": {
-    "options": {
-      "lineWidth": 120
-    },
-    "files": {
-      "exclude": [
-        "./node_modules/",
-        "./out/",
-        "./package-lock.json"
-      ]
-    }
+    "lineWidth": 120,
+    "exclude": [
+      "./node_modules/",
+      "./out/",
+      "./package-lock.json"
+    ]
   },
   "lint": {
-    "files": {
-      "exclude": [
-        "./node_modules/",
-        "./out/",
-        "./package-lock.json",
-        "./src/deps.node.ts"
-      ]
-    }
+    "exclude": [
+      "./node_modules/",
+      "./out/",
+      "./package-lock.json",
+      "./src/deps.node.ts"
+    ]
   },
   "tasks": {
     "bot": "deno run -A --watch bot.deno.ts",
