@@ -17,6 +17,5 @@
   },
   "[jsonc]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
-  },
-  "deno.path": "/home/roziscoding/.asdf/shims/deno"
+  }
 }
