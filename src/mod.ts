@@ -128,7 +128,7 @@ export function chatMembers(
   async function writeIfNew(key: ["chats", string], value: Chat): Promise<void>;
   async function writeIfNew(key: ["users", string], value: User): Promise<void>;
   async function writeIfNew(key: ["chat_members", string, string], value: ChatMember): Promise<void>;
-  async function writeIfNew(key: string[], value: any): Promise<void> {
+  async function writeIfNew(key: string[], value: ChatMembersSessionFlavor): Promise<void> {
     if (adapter.has(key)) return;
 
     await adapter.write(key, value);
@@ -159,6 +159,8 @@ export function chatMembers(
 
         return chatMember;
       },
+      // Ignoring require-await to mantain consistency with other methods
+      // deno-lint-ignore require-await
       getUser: async (userId = ctx.from?.id ?? undefined) => {
         if (!userId) throw new Error("ctx.from is undefined and no userId was provided");
 
