@@ -1,4 +1,9 @@
-import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts";
+import { Chat, ChatMember, ChatMemberUpdated, Composer, Context, Filter, FilterQuery, User } from "./deps.deno.ts";
+import { MaybeAsyncIterable, StorageAdapter } from "./storage.ts";
+
+type DeepPartial<T> = Partial<{ [k in keyof T]: DeepPartial<T[k]> }>;
+
+export type ChatMembersSessionFlavor = Chat | User | ChatMember;
 
 export type ChatMembersFlavor = {
   /**
@@ -12,10 +17,43 @@ export type ChatMembersFlavor = {
      * If the information is not yet known, calls `ctx.api.getChatMember`, saves the result to storage and returns it.
      *
      * @param chatId Chat in which to look for the  user
-     * @param userId Id of the user to get information about
+     * @param userId ID of the user to get information about
      * @returns Information about the status of the user on the given chat
      */
-    getChatMember: (chatId?: string | number, userId?: number) => Promise<ChatMember>;
+    getChatMember: (
+      chatId?: number,
+      userId?: number,
+    ) => Promise<ChatMember>;
+    /**
+     * Tries to obtain information about a user from the storage.
+     *
+     * The Bot API does not provide a `getUser` method, so it is not possible to obtain this information if it's not
+     * cached from a previous update.
+     *
+     * @param userId Id of the user to look for
+     * @returns Information about the user or `undefined` if user is not unknown
+     */
+    getUser: (userId?: number) => Promise<User | undefined>;
+    /**
+     * Tries to obtain information about a chat. If that information is already known, no API calls are made.
+     *
+     * If the information is not yet known, calls `ctx.api.getChat`, saves the result to storage and returns it.
+     *
+     * @param chatId ID of the chat to look for
+     * @returns Information about the chat
+     */
+    getChat: (chatId?: number) => Promise<Chat>;
+    getUserList: () => MaybeAsyncIterable<User>;
+    getChatList: () => MaybeAsyncIterable<Chat>;
+    /**
+     * Reads the list of chat members from storage.
+     *
+     * Pass `chatId` if you only want the members of a specific chat.
+     *
+     * @param chatId Optional. ID of the chat to list members for
+     * @returns The list of members from one or more chats
+     */
+    getChatMemberList: (chatId?: number) => MaybeAsyncIterable<ChatMember>;
   };
 };
 
@@ -23,44 +61,34 @@ type ChatMembersContext = Context & ChatMembersFlavor;
 
 export type ChatMembersOptions = {
   /**
-   * Prevents deletion of members when
-   * bot receives a LeftChatMember update
-   */
-  keepLeftChatMembers: boolean;
-  /**
-   * This option will install middleware to cache chat members without depending on the
-   * `chat_member` event. For every update, the middleware checks if `ctx.chat` and `ctx.from` exist. If they both do, it
-   * then proceeds to call `ctx.chatMembers.getChatMember` to add the chat member information to the storage in case it
-   * doesn't exist.
+   * This option will install middleware to cache chats, users and chat members without depending on the
+   * `chat_member` event.
    *
-   * Please note that this means the storage will be called for **every update**, which may be a lot, depending on how many
-   * updates your bot receives. This also has the potential to impact the performance of your bot drastically. Only use this
-   * if you _really_ know what you're doing and are ok with the risks and consequences.
+   * For every update, the middleware checks if `ctx.chat` or `ctx.from` exist. If they do, it then proceeds to call
+   * `ctx.chatMembers.getChatMember`, `ctx.chatMembers.getChat`, and `ctx.chatMembers.getUser` to add the information to
+   * the storage in case it doesn't exist.
+   *
+   * Please note that this means the storage will be called for **every update**, which may be a lot, depending on how
+   * many updates your bot receives.
+   * This also has the potential to impact the performance of your bot drastically.
+   * Only use this if you _really_ know what you're doing and are ok with the risks and consequences.
    */
   enableAggressiveStorage: boolean;
-  /**
-   * Function used to determine the key fo a given user and chat
-   * The default implementation uses a combination of
-   * chat and user ids in the format `chatId_userId`,
-   * which will store a user as much times as they join chats.
-   *
-   * If you wish to store users only once, regardless of chat,
-   * you can use a function that considers only the user id, like so:
-   *
-   * ```typescript
-   * bot.use(chatMembers(adapter, { getKey: update => update.new_chat_member.user.id }}));
-   * ```
-   *
-   * Keep in mind that, if you do that but don't set `keepLeftChatMembers` to `true`,
-   * a user will be deleted from storage when they leave any chat, even if they're still a member of
-   * another chat where the bot is present.
-   */
-  getKey: (chatId: string | number, userId: number) => string;
+  removeLeft: {
+    /**
+     * Whether or not to delete information about chat members that left a chat.
+     * Defaults to `true`.
+     */
+    chatMembers: boolean;
+    /**
+     * Whether or not to delete information about chats the bot leaves or is removed from.
+     * Defaults to `true`.
+     */
+    chats: boolean;
+  };
 };
 
-function defaultKeyStrategy(chatId: string | number, userId: number) {
-  return `${chatId}_${userId}`;
-}
+type CMFilter<T extends FilterQuery> = Filter<ChatMembersContext, T>;
 
 /**
  * Creates a middleware that keeps track of chat member updates
@@ -82,56 +110,126 @@ function defaultKeyStrategy(chatId: string | number, userId: number) {
  * @returns A middleware that keeps track of chat member updates
  */
 export function chatMembers(
-  adapter: StorageAdapter<ChatMember>,
-  options: Partial<ChatMembersOptions> = {},
+  adapter: StorageAdapter<ChatMembersSessionFlavor>,
+  options: DeepPartial<ChatMembersOptions> = {},
 ): Composer<ChatMembersContext> {
-  const { keepLeftChatMembers = false, enableAggressiveStorage = false, getKey = defaultKeyStrategy } = options;
+  const {
+    enableAggressiveStorage = false,
+    removeLeft: {
+      chatMembers: removeLeftChatMembers = true,
+      chats: removeLeftChats = true,
+    } = {},
+  } = options;
+
+  const isLeaving = (chatMember: ChatMemberUpdated) => ["left", "kicked"].includes(chatMember.new_chat_member.status);
+  const chatId = (ctx: CMFilter<"chat_member"> | CMFilter<"my_chat_member">) => ctx.chat.id.toString();
+  const userId = (chatMember: ChatMemberUpdated) => chatMember.new_chat_member.user.id.toString();
+
+  async function writeIfNew(key: ["chats", string], value: Chat): Promise<void>;
+  async function writeIfNew(key: ["users", string], value: User): Promise<void>;
+  async function writeIfNew(key: ["chat_members", string, string], value: ChatMember): Promise<void>;
+  async function writeIfNew(key: string[], value: any): Promise<void> {
+    if (adapter.has(key)) return;
+
+    await adapter.write(key, value);
+  }
 
   const composer = new Composer<ChatMembersContext>();
 
   composer.use((ctx, next) => {
     ctx.chatMembers = {
-      getChatMember: async (chatId = ctx.chat?.id ?? undefined, userId = ctx.from?.id ?? undefined) => {
+      getChatMember: async (
+        chatId = ctx.chat?.id ?? undefined,
+        userId = ctx.from?.id ?? undefined,
+      ) => {
         if (!userId) throw new Error("ctx.from is undefined and no userId was provided");
         if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
 
-        const key = getKey(chatId, userId);
-        const cachedChatMember = await adapter.read(key);
+        const key = [
+          "chat_members",
+          chatId.toString(),
+          userId.toString(),
+        ];
 
+        const cachedChatMember = await adapter.read(key) as ChatMember;
         if (cachedChatMember) return cachedChatMember;
 
         const chatMember = await ctx.api.getChatMember(chatId, userId);
-
         await adapter.write(key, chatMember);
 
         return chatMember;
       },
+      getUser: async (userId = ctx.from?.id ?? undefined) => {
+        if (!userId) throw new Error("ctx.from is undefined and no userId was provided");
+
+        const key = ["users", userId.toString()];
+
+        return adapter.read(key) as User | undefined;
+      },
+      getChat: async (chatId = ctx.chat?.id ?? undefined) => {
+        if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
+
+        const key = ["chats", chatId.toString()];
+
+        const cachedChat = await adapter.read(key) as Chat;
+        if (cachedChat) return cachedChat;
+
+        const chat = await ctx.api.getChat(chatId);
+        await adapter.write(key, chat);
+
+        return chat;
+      },
+      getUserList: () => adapter.values<User>(["users"]),
+      getChatList: () => adapter.values<Chat>(["chats"]),
+      getChatMemberList: (chatId) =>
+        adapter.values<ChatMember>(["chat_members", ...(chatId ? [chatId.toString()] : [])]),
     };
 
     return next();
   });
 
-  composer.on("chat_member", async (ctx, next) => {
-    const key = getKey(ctx.chatMember.chat.id, ctx.chatMember.new_chat_member.user.id);
-    const status = ctx.chatMember.new_chat_member.status;
+  composer.on("my_chat_member").branch(
+    (ctx) => isLeaving(ctx.myChatMember),
+    async (ctx, next) => {
+      if (!removeLeftChats) return next();
 
-    const DELETE_STATUS = ["left", "kicked"];
-
-    if (DELETE_STATUS.includes(status) && !keepLeftChatMembers) {
-      if (await adapter.read(key)) await adapter.delete(key);
-
+      await adapter.delete(["chats", chatId(ctx)]);
       return next();
-    }
+    },
+    async (ctx, next) => {
+      await adapter.write(["users", userId(ctx.myChatMember)], ctx.myChatMember.from);
+      await adapter.write(["chats", chatId(ctx)], ctx.chat);
+      return next();
+    },
+  );
 
-    await adapter.write(key, ctx.chatMember.new_chat_member);
-    return next();
-  });
+  composer
+    .on("chat_member")
+    .branch(
+      (ctx) => isLeaving(ctx.chatMember),
+      async (ctx, next) => {
+        if (!removeLeftChatMembers) return next();
+
+        await adapter.delete(["chat_members", chatId(ctx), userId(ctx.chatMember)]);
+        return next();
+      },
+      async (ctx, next) => {
+        await Promise.all([
+          await adapter.write(["users", userId(ctx.chatMember)], ctx.chatMember.new_chat_member.user),
+          await adapter.write(["chats", chatId(ctx)], ctx.chat),
+          await adapter.write(["chat_members", chatId(ctx), userId(ctx.chatMember)], ctx.chatMember.new_chat_member),
+        ]);
+
+        return next();
+      },
+    );
 
   composer
     .filter(() => enableAggressiveStorage)
-    .filter((ctx): ctx is ChatMembersContext & { chat: Chat; from: User } => Boolean(ctx.chat) && Boolean(ctx.from))
     .use(async (ctx, next) => {
-      await ctx.chatMembers.getChatMember();
+      if (ctx.chat && ctx.from && !ctx.hasChatType("private")) await ctx.chatMembers.getChatMember();
+      if (ctx.chat) await writeIfNew(["chats", ctx.chat.id.toString()], ctx.chat);
+      if (ctx.from) await writeIfNew(["users", ctx.from.id.toString()], ctx.from);
 
       return next();
     });

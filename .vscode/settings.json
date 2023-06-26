@@ -5,8 +5,8 @@
     "source.organizeImports": true
   },
   "deno.enable": true,
-  "deno.lint": true,
-  "deno.config": "./deno.json",
+  "deno.lint": false,
+  "deno.config": "",
   "editor.defaultFormatter": "denoland.vscode-deno",
   "editor.formatOnSaveMode": "file",
   "[typescript]": {
@@ -14,5 +14,6 @@
   },
   "[json]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
-  }
+  },
+  "deno.path": "/home/roziscoding/.asdf/shims/deno"
 }
