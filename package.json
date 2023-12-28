@@ -1,6 +1,6 @@
 {
   "name": "@grammyjs/chat-members",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Chat member plugin for grammY",
   "homepage": "https://github.com/grammyjs/chat-members",
   "main": "./out/mod.js",
@@ -24,8 +24,7 @@
     "url": "https://github.com/grammyjs/chat-members/issues"
   },
   "peerDependencies": {
-    "@grammyjs/types": "^2.11.2",
-    "grammy": "^1.13.0"
+    "grammy": "^1.19.0"
   },
   "devDependencies": {
     "@types/node": "^18.11.9"
