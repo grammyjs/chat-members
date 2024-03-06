@@ -1,7 +1,6 @@
 import { Chat, ChatMember, ChatMemberUpdated, Composer, Context, Filter, FilterQuery, User } from "./deps.deno.ts";
 import { MaybeAsyncIterable, StorageAdapter } from "./storage.ts";
-
-type DeepPartial<T> = Partial<{ [k in keyof T]: DeepPartial<T[k]> }>;
+import { DeepPartial } from "./types.ts";
 
 export type ChatMembersSessionFlavor = Chat | User | ChatMember;
 
@@ -199,7 +198,6 @@ export function chatMembers(
       return next();
     },
     async (ctx, next) => {
-      await adapter.write(["users", userId(ctx.myChatMember)], ctx.myChatMember.from);
       await adapter.write(["chats", chatId(ctx)], ctx.chat);
       return next();
     },
