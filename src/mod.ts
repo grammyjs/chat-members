@@ -68,7 +68,7 @@ export type ChatMembersOptions = {
     /**
      * Time in seconds to keep chat members in cache
      */
-    ttl?: number;
+    secondsToLive?: number;
   };
 };
 
@@ -103,7 +103,7 @@ export function chatMembers(
     keepLeftChatMembers = false,
     enableAggressiveStorage = false,
     getKey = defaultKeyStrategy,
-    caching: { enabled: enableCaching = false, ttl: cachingTtl = 60 } = { enabled: false, ttl: 60 },
+    caching: { enabled: enableCaching = false, secondsToLive: cachingTtl = 60 } = { enabled: false, secondsToLive: 60 },
   } = options;
 
   const cache = new Map<string, { ttl: number; value: ChatMember }>();
