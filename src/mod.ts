@@ -56,6 +56,20 @@ export type ChatMembersOptions = {
    * another chat where the bot is present.
    */
   getKey: (chatId: string | number, userId: number) => string;
+  /**
+   * Configuration options for caching chat members
+   * @default { enabled: false, ttl: 60 }
+   */
+  caching?: {
+    /**
+     * Whether or not to enable caching of chat members
+     */
+    enabled: boolean;
+    /**
+     * Time in seconds to keep chat members in cache
+     */
+    ttl?: number;
+  };
 };
 
 function defaultKeyStrategy(chatId: string | number, userId: number) {
@@ -85,8 +99,14 @@ export function chatMembers(
   adapter: StorageAdapter<ChatMember>,
   options: Partial<ChatMembersOptions> = {},
 ): Composer<ChatMembersContext> {
-  const { keepLeftChatMembers = false, enableAggressiveStorage = false, getKey = defaultKeyStrategy } = options;
+  const {
+    keepLeftChatMembers = false,
+    enableAggressiveStorage = false,
+    getKey = defaultKeyStrategy,
+    caching: { enabled: enableCaching = false, ttl: cachingTtl = 60 } = { enabled: false, ttl: 60 },
+  } = options;
 
+  const cache = new Map<string, { ttl: number; value: ChatMember }>();
   const composer = new Composer<ChatMembersContext>();
 
   composer.use((ctx, next) => {
@@ -96,12 +116,21 @@ export function chatMembers(
         if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
 
         const key = getKey(chatId, userId);
-        const cachedChatMember = await adapter.read(key);
 
-        if (cachedChatMember) return cachedChatMember;
+        const cachedChatMember = enableCaching ? cache.get(key) : undefined;
+        if (cachedChatMember && cachedChatMember.ttl > Date.now()) return cachedChatMember.value;
+        if (cachedChatMember) cache.delete(key);
+
+        const dbChatMember = await adapter.read(key);
+
+        if (dbChatMember) {
+          if (enableCaching) cache.set(key, { ttl: Date.now() + cachingTtl * 1000, value: dbChatMember });
+          return dbChatMember;
+        }
 
         const chatMember = await ctx.api.getChatMember(chatId, userId);
 
+        if (enableCaching) cache.set(key, { ttl: Date.now() + cachingTtl * 1000, value: chatMember });
         await adapter.write(key, chatMember);
 
         return chatMember;
@@ -118,11 +147,13 @@ export function chatMembers(
     const DELETE_STATUS = ["left", "kicked"];
 
     if (DELETE_STATUS.includes(status) && !keepLeftChatMembers) {
+      if (enableCaching) cache.delete(key);
       if (await adapter.read(key)) await adapter.delete(key);
 
       return next();
     }
 
+    if (enableCaching) cache.set(key, { ttl: Date.now() + cachingTtl * 1000, value: ctx.chatMember.new_chat_member });
     await adapter.write(key, ctx.chatMember.new_chat_member);
     return next();
   });
