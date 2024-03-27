@@ -33,9 +33,9 @@ export type ChatMembersOptions = {
    * then proceeds to call `ctx.chatMembers.getChatMember` to add the chat member information to the storage in case it
    * doesn't exist.
    *
-   * Enabling caching is highly recommended when using this, as it can avoid unnecessary storage calls.
+   * Enabling this automatically enables caching.
    *
-   * Please note that, whithout caching, the storage will be called for **every update**, which may be a lot, depending on how many
+   * Please note that, if you manually disable caching, the storage will be called for **every update**, which may be a lot, depending on how many
    * updates your bot receives. This also has the potential to impact the performance of your bot drastically. Only use this
    * if you _really_ know what you're doing and are ok with the risks and consequences.
    */
@@ -44,7 +44,7 @@ export type ChatMembersOptions = {
    * Enables caching of chat members. This can be useful to avoid unnecessary API calls
    * when the same user is queried multiple times in a short period of time.
    *
-   * Highly recommended if you're using aggressive storage.
+   * Enabled by default when using aggressive storage.
    */
   enableCaching: boolean;
   /**
@@ -98,7 +98,7 @@ export function chatMembers(
     keepLeftChatMembers = false,
     enableAggressiveStorage = false,
     getKey = defaultKeyStrategy,
-    enableCaching = false,
+    enableCaching = enableAggressiveStorage,
   } = options;
 
   const cache = new Map<string, { timestamp: number; value: ChatMember }>();
