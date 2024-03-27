@@ -119,7 +119,6 @@ export function chatMembers(
 
         const cachedChatMember = enableCaching ? cache.get(key) : undefined;
         if (cachedChatMember && cachedChatMember.ttl > Date.now()) return cachedChatMember.value;
-        if (cachedChatMember) cache.delete(key);
 
         const dbChatMember = await adapter.read(key);
 
