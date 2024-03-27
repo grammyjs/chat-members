@@ -33,11 +33,20 @@ export type ChatMembersOptions = {
    * then proceeds to call `ctx.chatMembers.getChatMember` to add the chat member information to the storage in case it
    * doesn't exist.
    *
-   * Please note that this means the storage will be called for **every update**, which may be a lot, depending on how many
+   * Enabling this automatically enables caching.
+   *
+   * Please note that, if you manually disable caching, the storage will be called for **every update**, which may be a lot, depending on how many
    * updates your bot receives. This also has the potential to impact the performance of your bot drastically. Only use this
    * if you _really_ know what you're doing and are ok with the risks and consequences.
    */
   enableAggressiveStorage: boolean;
+  /**
+   * Enables caching of chat members. This can be useful to avoid unnecessary API calls
+   * when the same user is queried multiple times in a short period of time.
+   *
+   * Enabled by default when using aggressive storage.
+   */
+  enableCaching: boolean;
   /**
    * Function used to determine the key fo a given user and chat
    * The default implementation uses a combination of
@@ -85,8 +94,14 @@ export function chatMembers(
   adapter: StorageAdapter<ChatMember>,
   options: Partial<ChatMembersOptions> = {},
 ): Composer<ChatMembersContext> {
-  const { keepLeftChatMembers = false, enableAggressiveStorage = false, getKey = defaultKeyStrategy } = options;
+  const {
+    keepLeftChatMembers = false,
+    enableAggressiveStorage = false,
+    getKey = defaultKeyStrategy,
+    enableCaching = enableAggressiveStorage,
+  } = options;
 
+  const cache = new Map<string, { timestamp: number; value: ChatMember }>();
   const composer = new Composer<ChatMembersContext>();
 
   composer.use((ctx, next) => {
@@ -96,12 +111,20 @@ export function chatMembers(
         if (!chatId) throw new Error("ctx.chat is undefined and no chatId was provided");
 
         const key = getKey(chatId, userId);
-        const cachedChatMember = await adapter.read(key);
 
-        if (cachedChatMember) return cachedChatMember;
+        const cachedChatMember = enableCaching ? cache.get(key) : undefined;
+        if (cachedChatMember) return cachedChatMember.value;
+
+        const dbChatMember = await adapter.read(key);
+
+        if (dbChatMember) {
+          if (enableCaching) cache.set(key, { timestamp: Date.now(), value: dbChatMember });
+          return dbChatMember;
+        }
 
         const chatMember = await ctx.api.getChatMember(chatId, userId);
 
+        if (enableCaching) cache.set(key, { timestamp: Date.now(), value: chatMember });
         await adapter.write(key, chatMember);
 
         return chatMember;
@@ -118,11 +141,15 @@ export function chatMembers(
     const DELETE_STATUS = ["left", "kicked"];
 
     if (DELETE_STATUS.includes(status) && !keepLeftChatMembers) {
+      if (enableCaching) cache.delete(key);
       if (await adapter.read(key)) await adapter.delete(key);
 
       return next();
     }
 
+    if (enableCaching) {
+      cache.set(key, { timestamp: Date.now(), value: ctx.chatMember.new_chat_member });
+    }
     await adapter.write(key, ctx.chatMember.new_chat_member);
     return next();
   });
