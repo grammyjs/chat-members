@@ -165,7 +165,7 @@ Here's an example:
 bot.on("message", async (ctx) => {
     const chatMember = await ctx.chatMembers.getChatMember();
 
-    return ctx.reply(`Hello, ${chatMember.user.first_name}! I see you are a ${chatMember.status} of this chat!`);
+    await ctx.reply(`Hello, ${chatMember.user.first_name}! I see you are a ${chatMember.status} of this chat!`);
 });
 ```
 

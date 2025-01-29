@@ -52,8 +52,7 @@ bot.start({
 });
 ```
 
-Filters include the regular Telegram statuses (owner, administrator, member, restricted, left, kicked) and some
-additional ones for convenience:
+Filters include the regular Telegram statuses (owner, administrator, member, restricted, left, kicked) and some additional ones for convenience:
 
 - restricted_in: a member of the chat with restrictions;
 - restricted_out: not a member of the chat, has restrictions;
@@ -81,10 +80,9 @@ groups.filter(
 );
 ```
 
-#### Example usage
+#### Example Usage
 
-The best way to use the filters is to pick a set of relevant statuses, for example 'out', 'regular' and 'admin', then
-make a table of the transitions between them:
+The best way to use the filters is to pick a set of relevant statuses, for example 'out', 'regular' and 'admin', then make a table of the transitions between them:
 
 | ↱           | Out         | Regular              | Admin               |
 | ----------- | ----------- | -------------------- | ------------------- |
@@ -116,7 +114,7 @@ groups.on("chat_member", (ctx, next) => {
 
     // update database data here
 
-    return next();
+    await next();
 });
 
 // specific handlers

@@ -10,7 +10,7 @@ import type {
     Filter,
 } from "./deps.deno.ts";
 
-/**
+/*
  * The 'restricted' status is ambiguous, since it can refer both to a member in
  * the group and a member out of the group.
  * To avoid ambiguity we split the restricted role into "restricted_in" and
