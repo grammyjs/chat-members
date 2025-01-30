@@ -143,6 +143,15 @@ function normalizeChatMemberQuery<T extends ChatMemberQuery>(
     ] as NormalizeChatMemberQuery<T>[];
 }
 
+/**
+ * Utility function to query the status of a chat member.
+ *
+ * Pass one of 'restricted_in', 'restricted_out', 'in', 'out', 'free', 'admin',
+ * 'regular', or one of the default Telegram statuses ('administrator',
+ * 'creator', 'kicked', 'left', 'member', 'restricted'), or an array of them.
+ *
+ * Returns true if the chat member matches the query.
+ */
 export function chatMemberIs<
     C extends ChatMember,
     Q extends ChatMemberQuery,
