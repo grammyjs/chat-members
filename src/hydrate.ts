@@ -1,10 +1,4 @@
-import {
-  type Api,
-  type ChatMember,
-  Context,
-  type RawApi,
-  type Transformer,
-} from "./deps.deno.ts";
+import { type Api, type ChatMember, Context, type RawApi, type Transformer } from "./deps.deno.ts";
 import type { ChatMemberQuery, FilteredChatMember } from "./filters.ts";
 import { chatMemberIs } from "./mod.ts";
 
@@ -34,8 +28,7 @@ type HydrateReturnType<
 > = (
   ...args: Parameters<F>
 ) => Promise<
-  Awaited<ReturnType<F>> extends infer C
-    ? [C] extends [Array<ChatMember>] ? HydratedChatMember<C[number]>[]
+  Awaited<ReturnType<F>> extends infer C ? [C] extends [Array<ChatMember>] ? HydratedChatMember<C[number]>[]
     : [C] extends [ChatMember] ? HydratedChatMember<C>
     : never
     : never

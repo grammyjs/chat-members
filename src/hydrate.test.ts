@@ -1,11 +1,7 @@
 import { assert } from "jsr:@std/assert@1";
 import { Api, type ChatMember, Context, type Update } from "./deps.deno.ts";
 import type { ChatMemberIn, ChatMemberRestrictedIn } from "./filters.ts";
-import {
-  hydrateChatMember,
-  type HydrateChatMemberApiFlavor,
-  type HydrateChatMemberFlavor,
-} from "./hydrate.ts";
+import { hydrateChatMember, type HydrateChatMemberApiFlavor, type HydrateChatMemberFlavor } from "./hydrate.ts";
 
 Deno.test("hydrateChatMember transformer should apply to getChatMember", async () => {
   const api = new Api("") as HydrateChatMemberApiFlavor<Api>;
