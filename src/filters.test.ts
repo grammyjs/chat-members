@@ -32,7 +32,7 @@ type ChatMemberStatusBase = Exclude<ChatMember["status"], "restricted"> | "restr
 
 Deno.test("filter queries should produce the correct type", () => {
   assertType<IsExact<FilteredChatMember<ChatMember, "admin">, ChatMemberAdmin>>(true);
-  assertType<IsExact<FilteredChatMember<ChatMember, "administrator">, ChatMemberAdministrator>>;
+  assertType<IsExact<FilteredChatMember<ChatMember, "administrator">, ChatMemberAdministrator>>(true);
   assertType<IsExact<FilteredChatMember<ChatMember, "creator">, ChatMemberOwner>>(true);
   assertType<IsExact<FilteredChatMember<ChatMember, "free">, ChatMemberFree>>(true);
   assertType<IsExact<FilteredChatMember<ChatMember, "in">, ChatMemberIn>>(true);
