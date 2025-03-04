@@ -1,62 +1,45 @@
 import { assert } from "jsr:@std/assert@1";
+import { IsExact, assertType } from "jsr:@std/testing/types";
 import { Api, type ChatMember, Context, type Update } from "./deps.deno.ts";
 import type { ChatMemberIn, ChatMemberRestrictedIn } from "./filters.ts";
 import { hydrateChatMember, type HydrateChatMemberApiFlavor, type HydrateChatMemberFlavor } from "./hydrate.ts";
 
 Deno.test("hydrateChatMember transformer should apply to getChatMember", async () => {
   const api = new Api("") as HydrateChatMemberApiFlavor<Api>;
-  // deno-lint-ignore require-await
-  api.config.use(async (_prev, method, _payload, _signal) => {
+  api.config.use((_prev, method, _payload, _signal) => {
     // mock call to always return a valid result
     if (method === "getChatMember") {
-      return {
+      return Promise.resolve({
         ok: true,
         result: {
           status: "restricted",
           is_member: true,
           user: {},
-        } as ChatMember,
-        // deno-lint-ignore no-explicit-any
-      } as any;
+          // deno-lint-ignore no-explicit-any
+        } as ChatMember as any,
+      });
     }
     throw new Error("Not implemented");
   });
   api.config.use(hydrateChatMember());
 
-  type Expect<T extends true> = T;
-  type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <
-    T,
-  >() => T extends Y ? 1 : 2 ? true
-    : false;
-
   const chatMember = await api.getChatMember(1, 2);
   assert(Object.prototype.hasOwnProperty.call(chatMember, "is"));
 
   assert(chatMember.is("in"));
-  type InTest = Expect<
-    Equal<(typeof chatMember)["status"], ChatMemberIn["status"]>
-  >;
+  assertType<IsExact<(typeof chatMember)["status"], ChatMemberIn["status"]>>(true)
 
   assert(chatMember.is("restricted"));
-  type RestrictedInTest =
-    & Expect<
-      Equal<(typeof chatMember)["status"], ChatMemberRestrictedIn["status"]>
-    >
-    & Expect<
-      Equal<
-        (typeof chatMember)["is_member"],
-        ChatMemberRestrictedIn["is_member"]
-      >
-    >;
+  assertType<IsExact<(typeof chatMember)["status"], ChatMemberRestrictedIn["status"]>>(true);
+  assertType<IsExact<(typeof chatMember)["is_member"], ChatMemberRestrictedIn["is_member"]>>(true);
 });
 
 Deno.test("hydrateChatMember transformer should apply to getChatAdministrators", async () => {
   const api = new Api("") as HydrateChatMemberApiFlavor<Api>;
-  // deno-lint-ignore require-await
-  api.config.use(async (_prev, method, _payload, _signal) => {
+  api.config.use((_prev, method, _payload, _signal) => {
     // mock call to always return a valid result
     if (method === "getChatAdministrators") {
-      return {
+      return Promise.resolve({
         ok: true,
         result: [
           {
@@ -67,9 +50,9 @@ Deno.test("hydrateChatMember transformer should apply to getChatAdministrators",
             status: "administrator",
             user: {},
           } as ChatMember,
-        ],
-        // deno-lint-ignore no-explicit-any
-      } as any;
+          // deno-lint-ignore no-explicit-any
+        ] as any,
+      });
     }
     throw new Error("Not implemented");
   });
@@ -85,17 +68,16 @@ Deno.test("hydrateChatMember transformer should apply to getChatAdministrators",
 
 Deno.test("hydrateChatMember transformer should apply to getAuthor", async () => {
   const api = new Api("") as HydrateChatMemberApiFlavor<Api>;
-  // deno-lint-ignore require-await
-  api.config.use(async (_prev, method, _payload, _signal) => {
+  api.config.use((_prev, method, _payload, _signal) => {
     // mock call to always return a valid result
     if (method === "getChatMember") {
-      return {
+      return Promise.resolve({
         ok: true,
         result: {
           status: "member",
-        } as ChatMember,
-        // deno-lint-ignore no-explicit-any
-      } as any;
+          // deno-lint-ignore no-explicit-any
+        } as ChatMember as any,
+      });
     }
     throw new Error("Not implemented");
   });
@@ -110,7 +92,7 @@ Deno.test("hydrateChatMember transformer should apply to getAuthor", async () =>
     },
     api,
     // deno-lint-ignore no-explicit-any
-    {} as any,
+    {} as any
   ) as HydrateChatMemberFlavor<Context>;
 
   const chatMember = await ctx.getAuthor();
