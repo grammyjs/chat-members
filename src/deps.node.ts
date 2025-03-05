@@ -1,4 +1,4 @@
-export { Api, Composer, Context, type Filter, type StorageAdapter } from "grammy";
+export { Api, Composer, Context, type Filter, type RawApi, type StorageAdapter, type Transformer } from "grammy";
 export type {
   Chat,
   ChatMember,
@@ -9,6 +9,7 @@ export type {
   ChatMemberOwner,
   ChatMemberRestricted,
   ChatMemberUpdated,
+  Update,
   User,
   UserFromGetMe,
 } from "grammy/types";
