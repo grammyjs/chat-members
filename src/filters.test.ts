@@ -1,4 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
+import { assertType, IsExact } from "jsr:@std/testing/types";
 import {
   Api,
   type ChatMember,
@@ -27,77 +28,26 @@ import {
   myChatMemberFilter,
 } from "./filters.ts";
 
-type ChatMemberStatusBase =
-  | Exclude<ChatMember["status"], "restricted">
-  | "restricted_in"
-  | "restricted_out";
+type ChatMemberStatusBase = Exclude<ChatMember["status"], "restricted"> | "restricted_in" | "restricted_out";
 
 Deno.test("filter queries should produce the correct type", () => {
-  type Expect<T extends true> = T;
-  type Equal<X, Y> = (<T>() => T extends X ? 1 : 2) extends <
-    T,
-  >() => T extends Y ? 1 : 2 ? true
-    : false;
-
-  type AdminTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "admin">, ChatMemberAdmin>
-  >;
-  type AdministratorTest = Expect<
-    Equal<
-      FilteredChatMember<ChatMember, "administrator">,
-      ChatMemberAdministrator
-    >
-  >;
-  type CreatorTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "creator">, ChatMemberOwner>
-  >;
-  type FreeTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "free">, ChatMemberFree>
-  >;
-  type InTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "in">, ChatMemberIn>
-  >;
-  type OutTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "out">, ChatMemberOut>
-  >;
-  type Foo = FilteredChatMember<ChatMember, "regular">;
-  type RegularTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "regular">, ChatMemberRegular>
-  >;
-  type KickedTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "kicked">, ChatMemberBanned>
-  >;
-  type LeftTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "left">, ChatMemberLeft>
-  >;
-  type MemberTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "member">, ChatMemberMember>
-  >;
-  type RestrictedTest = Expect<
-    Equal<FilteredChatMember<ChatMember, "restricted">, ChatMemberRestricted>
-  >;
-  type RestrictedInTest = Expect<
-    Equal<
-      FilteredChatMember<ChatMember, "restricted_in">,
-      ChatMemberRestrictedIn
-    >
-  >;
-  type RestrictedOutTest = Expect<
-    Equal<
-      FilteredChatMember<ChatMember, "restricted_out">,
-      ChatMemberRestrictedOut
-    >
-  >;
+  assertType<IsExact<FilteredChatMember<ChatMember, "admin">, ChatMemberAdmin>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "administrator">, ChatMemberAdministrator>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "creator">, ChatMemberOwner>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "free">, ChatMemberFree>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "in">, ChatMemberIn>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "out">, ChatMemberOut>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "regular">, ChatMemberRegular>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "kicked">, ChatMemberBanned>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "left">, ChatMemberLeft>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "member">, ChatMemberMember>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "restricted">, ChatMemberRestricted>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "restricted_in">, ChatMemberRestrictedIn>>(true);
+  assertType<IsExact<FilteredChatMember<ChatMember, "restricted_out">, ChatMemberRestrictedOut>>(true);
 });
 
 Deno.test("should apply query to chat member", () => {
-  const results: Record<
-    ChatMemberStatusBase,
-    Record<
-      Exclude<ChatMemberQuery, ChatMember["status"]>,
-      boolean
-    >
-  > = {
+  const results: Record<ChatMemberStatusBase, Record<Exclude<ChatMemberQuery, ChatMember["status"]>, boolean>> = {
     administrator: {
       in: true,
       out: false,
@@ -163,35 +113,25 @@ Deno.test("should apply query to chat member", () => {
     },
   } as const;
 
-  const statuses: ChatMember["status"][] = [
-    "administrator",
-    "creator",
-    "kicked",
-    "left",
-    "member",
-    "restricted",
-  ];
+  const statuses: ChatMember["status"][] = ["administrator", "creator", "kicked", "left", "member", "restricted"];
   const baseStatuses = Object.keys(results) as ChatMemberStatusBase[];
   baseStatuses.forEach((status) => {
-    const chatMember = (status === "restricted_in"
-      ? { status: "restricted", is_member: true }
-      : status === "restricted_out"
-      ? { status: "restricted", is_member: false }
-      : { status }) as ChatMember;
+    const chatMember = (
+      status === "restricted_in"
+        ? { status: "restricted", is_member: true }
+        : status === "restricted_out"
+        ? { status: "restricted", is_member: false }
+        : { status }
+    ) as ChatMember;
     const statusResults = results[status];
 
-    const queries = Object.keys(
-      results[status],
-    ) as (keyof typeof statusResults)[];
+    const queries = Object.keys(results[status]) as (keyof typeof statusResults)[];
     queries.forEach((query) => {
       assertEquals(chatMemberIs(chatMember, query), statusResults[query]);
     });
 
     statuses.forEach((query) => {
-      assertEquals(
-        chatMemberIs(chatMember, query),
-        chatMember.status === query,
-      );
+      assertEquals(chatMemberIs(chatMember, query), chatMember.status === query);
     });
   });
 });
@@ -269,14 +209,8 @@ Deno.test("should filter out other types of updates", () => {
     new Api(""),
     {} as UserFromGetMe,
   );
-  assertEquals(
-    myChatMemberFilter("admin", "admin")(administratorAdministratorCtx),
-    false,
-  );
-  assertEquals(
-    chatMemberFilter("admin", "admin")(administratorAdministratorCtx),
-    true,
-  );
+  assertEquals(myChatMemberFilter("admin", "admin")(administratorAdministratorCtx), false);
+  assertEquals(chatMemberFilter("admin", "admin")(administratorAdministratorCtx), true);
 
   const memberRestrictedCtx = new Context(
     {
@@ -289,12 +223,6 @@ Deno.test("should filter out other types of updates", () => {
     new Api(""),
     {} as UserFromGetMe,
   );
-  assertEquals(
-    myChatMemberFilter("free", "restricted")(memberRestrictedCtx),
-    true,
-  );
-  assertEquals(
-    chatMemberFilter("free", "restricted")(memberRestrictedCtx),
-    false,
-  );
+  assertEquals(myChatMemberFilter("free", "restricted")(memberRestrictedCtx), true);
+  assertEquals(chatMemberFilter("free", "restricted")(memberRestrictedCtx), false);
 });

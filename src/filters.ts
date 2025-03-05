@@ -111,14 +111,10 @@ type ChatMemberQueriesMap = {
   restricted_out: ChatMemberRestrictedOut;
 };
 
-type NormalizeChatMemberQueryCore<Q extends ChatMemberQuery> = (typeof chatMemberQueries)[Q][number];
-
 type MaybeArray<T> = T | T[];
 type NormalizeChatMemberQuery<
   Q extends ChatMemberQuery,
-> = Q extends ChatMemberQuery ? NormalizeChatMemberQueryCore<Q>
-  : (Q extends ChatMemberQuery[] ? NormalizeChatMemberQuery<Q[number]>
-    : never);
+> = (typeof chatMemberQueries)[Q][number];
 export type FilteredChatMember<
   C extends ChatMember,
   Q extends ChatMemberQuery,
