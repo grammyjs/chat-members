@@ -185,6 +185,7 @@ export function chatMemberIs<
  *    // ...
  *  },
  * );
+ * ```
  */
 export function myChatMemberFilter<
   C extends Context,
