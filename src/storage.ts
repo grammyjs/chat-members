@@ -1,6 +1,6 @@
 import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts";
 
-export type ChatMembersFlavor = {
+export type ChatMembersFlavor<C extends Context> = C & {
   /**
    * Namespace of the `chat-members` plugin
    */
@@ -18,8 +18,6 @@ export type ChatMembersFlavor = {
     getChatMember: (chatId?: string | number, userId?: number) => Promise<ChatMember>;
   };
 };
-
-type ChatMembersContext = Context & ChatMembersFlavor;
 
 export type ChatMembersOptions = {
   /**
@@ -90,10 +88,10 @@ function defaultKeyStrategy(chatId: string | number, userId: number) {
  * @param options Configuration options for the middleware
  * @returns A middleware that keeps track of chat member updates
  */
-export function chatMembers(
+export function chatMembers<C extends Context>(
   adapter: StorageAdapter<ChatMember>,
   options: Partial<ChatMembersOptions> = {},
-): Composer<ChatMembersContext> {
+): Composer<ChatMembersFlavor<C>> {
   const {
     keepLeftChatMembers = false,
     enableAggressiveStorage = false,
@@ -102,7 +100,7 @@ export function chatMembers(
   } = options;
 
   const cache = new Map<string, { timestamp: number; value: ChatMember }>();
-  const composer = new Composer<ChatMembersContext>();
+  const composer = new Composer<ChatMembersFlavor<C>>();
 
   composer.use((ctx, next) => {
     ctx.chatMembers = {
@@ -156,7 +154,7 @@ export function chatMembers(
 
   composer
     .filter(() => enableAggressiveStorage)
-    .filter((ctx): ctx is ChatMembersContext & { chat: Chat; from: User } => Boolean(ctx.chat) && Boolean(ctx.from))
+    .filter((ctx): ctx is ChatMembersFlavor<C> & { chat: Chat; from: User } => Boolean(ctx.chat) && Boolean(ctx.from))
     .use(async (ctx, next) => {
       await ctx.chatMembers.getChatMember();
 
