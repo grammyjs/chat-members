@@ -1,5 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@1";
-import { assertType, IsExact } from "jsr:@std/testing/types";
+import { assertEquals } from "@std/assert";
+import { assertType, IsExact } from "@std/testing/types";
 import {
   Api,
   type ChatMember,
@@ -12,7 +12,7 @@ import {
   type ChatMemberUpdated,
   Context,
   type UserFromGetMe,
-} from "./deps.deno.ts";
+} from "./deps.ts";
 import {
   type ChatMemberAdmin,
   chatMemberFilter,

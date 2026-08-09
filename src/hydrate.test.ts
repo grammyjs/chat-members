@@ -1,12 +1,12 @@
-import { assert } from "jsr:@std/assert@1";
-import { assertType, IsExact } from "jsr:@std/testing/types";
-import { Api, type ChatMember, Context, type Update } from "./deps.deno.ts";
+import { assert } from "@std/assert";
+import { assertType, IsExact } from "@std/testing/types";
+import { Api, type ChatMember, Context, type Update } from "./deps.ts";
 import type { ChatMemberIn, ChatMemberRestrictedIn } from "./filters.ts";
 import { hydrateChatMember, type HydrateChatMemberApiFlavor, type HydrateChatMemberFlavor } from "./hydrate.ts";
 
 Deno.test("hydrateChatMember transformer should apply to getChatMember", async () => {
   const api = new Api("") as HydrateChatMemberApiFlavor<Api>;
-  api.config.use((_prev, method, _payload, _signal) => {
+  api.transform((_prev, { method }, _signal) => {
     // mock call to always return a valid result
     if (method === "getChatMember") {
       return Promise.resolve({
@@ -21,7 +21,7 @@ Deno.test("hydrateChatMember transformer should apply to getChatMember", async (
     }
     throw new Error("Not implemented");
   });
-  api.config.use(hydrateChatMember());
+  api.transform(hydrateChatMember());
 
   const chatMember = await api.getChatMember(1, 2);
   assert(Object.prototype.hasOwnProperty.call(chatMember, "is"));
@@ -36,7 +36,7 @@ Deno.test("hydrateChatMember transformer should apply to getChatMember", async (
 
 Deno.test("hydrateChatMember transformer should apply to getChatAdministrators", async () => {
   const api = new Api("") as HydrateChatMemberApiFlavor<Api>;
-  api.config.use((_prev, method, _payload, _signal) => {
+  api.transform((_prev, { method }, _signal) => {
     // mock call to always return a valid result
     if (method === "getChatAdministrators") {
       return Promise.resolve({
@@ -56,7 +56,7 @@ Deno.test("hydrateChatMember transformer should apply to getChatAdministrators",
     }
     throw new Error("Not implemented");
   });
-  api.config.use(hydrateChatMember());
+  api.transform(hydrateChatMember());
 
   const chatAdministrators = await api.getChatAdministrators(1);
   chatAdministrators.forEach((admin) => {
@@ -68,7 +68,7 @@ Deno.test("hydrateChatMember transformer should apply to getChatAdministrators",
 
 Deno.test("hydrateChatMember transformer should apply to getAuthor", async () => {
   const api = new Api("") as HydrateChatMemberApiFlavor<Api>;
-  api.config.use((_prev, method, _payload, _signal) => {
+  api.transform((_prev, { method }, _signal) => {
     // mock call to always return a valid result
     if (method === "getChatMember") {
       return Promise.resolve({
@@ -81,7 +81,7 @@ Deno.test("hydrateChatMember transformer should apply to getAuthor", async () =>
     }
     throw new Error("Not implemented");
   });
-  api.config.use(hydrateChatMember());
+  api.transform(hydrateChatMember());
   const ctx = new Context(
     {
       update_id: 1,

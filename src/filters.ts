@@ -7,8 +7,8 @@ import type {
   ChatMemberOwner,
   ChatMemberRestricted,
   Context,
-  Filter,
-} from "./deps.deno.ts";
+  FilterQueryContext,
+} from "./deps.ts";
 
 /*
  * The 'restricted' status is ambiguous, since it can refer both to a member in
@@ -194,7 +194,7 @@ export function myChatMemberFilter<
 >(oldStatus: MaybeArray<Q1>, newStatus: MaybeArray<Q2>) {
   return (
     ctx: C,
-  ): ctx is Filter<C, "my_chat_member"> & {
+  ): ctx is FilterQueryContext<C, "my_chat_member"> & {
     myChatMember: {
       old_chat_member: FilteredChatMember<ChatMember, Q1>;
       new_chat_member: FilteredChatMember<ChatMember, Q2>;
@@ -235,7 +235,7 @@ export function chatMemberFilter<
 >(oldStatus: MaybeArray<Q1>, newStatus: MaybeArray<Q2>) {
   return (
     ctx: C,
-  ): ctx is Filter<C, "chat_member"> & {
+  ): ctx is FilterQueryContext<C, "chat_member"> & {
     chatMember: {
       old_chat_member: FilteredChatMember<ChatMember, Q1>;
       new_chat_member: FilteredChatMember<ChatMember, Q2>;

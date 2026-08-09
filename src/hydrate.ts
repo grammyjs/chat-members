@@ -1,4 +1,4 @@
-import { type Api, type ChatMember, Context, type RawApi, type Transformer } from "./deps.deno.ts";
+import type { Api, ChatMember, Context, RawApi, Transformer } from "./deps.ts";
 import type { ChatMemberQuery, FilteredChatMember } from "./filters.ts";
 import { chatMemberIs } from "./mod.ts";
 
@@ -99,15 +99,15 @@ export function hydrateChatMember<R extends RawApi = RawApi>(): Transformer<R> {
     });
   }
 
-  return async (prev, method, payload, signal) => {
-    const res = await prev(method, payload, signal);
+  return async (prev, data, signal) => {
+    const res = await prev(data, signal);
     if (!res.ok) {
       return res;
     }
 
-    if (method === "getChatMember") {
+    if (data.method === "getChatMember") {
       hydrate(res.result as ChatMember);
-    } else if (method === "getChatAdministrators") {
+    } else if (data.method === "getChatAdministrators") {
       (res.result as Array<ChatMember>).forEach(hydrate);
     }
 

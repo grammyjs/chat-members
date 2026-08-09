@@ -1,12 +1,4 @@
-export {
-  Api,
-  Composer,
-  Context,
-  type Filter,
-  type RawApi,
-  type StorageAdapter,
-  type Transformer,
-} from "https://lib.deno.dev/x/grammy@v1/mod.ts";
+export { Api, Composer, Context, type FilterQueryContext, type RawApi, type Transformer } from "grammy";
 export type {
   Chat,
   ChatMember,
@@ -20,4 +12,4 @@ export type {
   Update,
   User,
   UserFromGetMe,
-} from "https://lib.deno.dev/x/grammy@v1/types.ts";
+} from "grammy/types";

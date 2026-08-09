@@ -1,4 +1,6 @@
-import { Chat, ChatMember, Composer, Context, StorageAdapter, User } from "./deps.deno.ts";
+import type { Chat, ChatMember, Context, User } from "./deps.ts";
+import { Composer } from "./deps.ts";
+import type { StorageAdapter } from "./types.ts";
 
 export type ChatMembersFlavor = {
   /**
